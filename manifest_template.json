@@ -1,0 +1,27 @@
+{
+    "format_version": "1.0.0",
+    "package_id": "00000000-0000-0000-0000-000000000000",
+    "created_by": {
+        "tool": "ida-json-packager",
+        "version": "1.0.0"
+    },
+    "created_at": "2026-01-19T00:00:00Z",
+    "files": [
+        {
+            "filename": "data/functions.json",
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "mime_type": "application/json"
+        },
+        {
+            "filename": "data/xrefs.json",
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "mime_type": "application/json"
+        }
+    ],
+    "signing": {
+        "algorithm": "ed25519",
+        "public_key_fingerprint": "0123456789abcdef"
+    }
+}

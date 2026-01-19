@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+.Python
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# IDA exports (keep sample, ignore real exports)
+*.ida_export.json
+*.ida_export.ndjson
+!sample_export.json
+
+# Packages (keep test for reference if needed)
+*.tar.gz
+!test_package.tar.gz
+
+# Signing keys (NEVER commit private keys)
+*_key.json
+*.pem
+signature.sig
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
