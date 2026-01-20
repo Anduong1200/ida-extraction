@@ -22,31 +22,37 @@ env/
 *.swo
 *~
 
-# IDA exports (keep samples for dataset reference)
+# Exports and Generated Data
+exports/
+ida_exports/
+pyg_graphs/
+graphs/
 *.ida_export.json
 *.ida_export.ndjson
 !sample_export.json
-exports/
-ida_exports/
+
+# Model Weights
+*.pt
+*.pth
+!models/*.py
 
 # Packages
 *.tar.gz
-!test_package.tar.gz
 
-# PyG graphs (generated, not tracked)
-*.pt
-pyg_graphs/
-graphs/
-
-# Signing keys (NEVER commit private keys)
-*_key.json
-*.pem
-signature.sig
+# Logs
+*.log
+failed_samples.log
 
 # OS
 .DS_Store
 Thumbs.db
 desktop.ini
 
-# Logs
-*.log
+# Cuckoo Sandbox Reports (Keep samples)
+*.cuckoo.json
+!synthetic_cuckoo.json
+
+# Keys and Secrets
+*_key.json
+*.pem
+signature.sig

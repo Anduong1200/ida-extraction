@@ -1,0 +1,5 @@
+# Sample Report List for Manual Mode
+# Add paths to Cuckoo JSON reports here (one per line)
+# Lines starting with # are ignored
+
+synthetic_cuckoo.json

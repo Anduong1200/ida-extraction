@@ -1,0 +1,204 @@
+{
+  "info": {
+    "id": 1,
+    "score": 8.5
+  },
+  "target": {
+    "category": "file",
+    "file": {
+      "name": "malware.exe",
+      "sha256": "abcdef123456"
+    }
+  },
+  "network": {
+    "hosts": [
+      "192.168.1.100",
+      "8.8.8.8",
+      "cnc-server.com"
+    ],
+    "dns": [
+      {
+        "request": "cnc-server.com",
+        "answers": [
+          {
+            "data": "1.2.3.4"
+          }
+        ]
+      }
+    ],
+    "tcp": [
+      {
+        "src": "192.168.56.101",
+        "dst": "1.2.3.4",
+        "dport": 80
+      }
+    ]
+  },
+  "behavior": {
+    "processes": [
+      {
+        "process_id": 1000,
+        "parent_id": 400,
+        "process_name": "malware.exe",
+        "command_line": "\"C:\\Users\\Admin\\malware.exe\"",
+        "calls": [
+          {
+            "api": "GetSystemInfo",
+            "category": "system",
+            "arguments": {},
+            "time": 0.0,
+            "return": "0"
+          },
+          {
+            "api": "GetComputerNameW",
+            "category": "system",
+            "arguments": {
+              "lpBuffer": "WIN-SANDBOX"
+            },
+            "time": 0.01,
+            "return": "1"
+          },
+          {
+            "api": "InternetOpenA",
+            "category": "network",
+            "arguments": {
+              "sAgent": "Mozilla/5.0"
+            },
+            "time": 0.03,
+            "return": "0x1234"
+          },
+          {
+            "api": "InternetConnectA",
+            "category": "network",
+            "arguments": {
+              "lpszServerName": "cnc-server.com",
+              "nServerPort": 80
+            },
+            "time": 0.08,
+            "return": "0x1235"
+          },
+          {
+            "api": "CreateFileW",
+            "category": "file",
+            "arguments": {
+              "filepath": "C:\\Users\\Admin\\Documents\\report.docx",
+              "dwDesiredAccess": "GENERIC_READ"
+            },
+            "time": 0.18,
+            "return": "0x100"
+          },
+          {
+            "api": "ReadFile",
+            "category": "file",
+            "arguments": {
+              "hFile": "0x100"
+            },
+            "time": 0.19,
+            "return": "1"
+          },
+          {
+            "api": "WriteFile",
+            "category": "file",
+            "arguments": {
+              "hFile": "0x100",
+              "Buffer": "ENCRYPTED_DATA..."
+            },
+            "time": 0.2,
+            "return": "1"
+          },
+          {
+            "api": "CloseHandle",
+            "category": "handle",
+            "arguments": {
+              "hObject": "0x100"
+            },
+            "time": 0.21000000000000002,
+            "return": "1"
+          },
+          {
+            "api": "CreateFileW",
+            "category": "file",
+            "arguments": {
+              "filepath": "C:\\Users\\Admin\\Pictures\\photo.jpg",
+              "dwDesiredAccess": "GENERIC_READ"
+            },
+            "time": 0.23,
+            "return": "0x100"
+          },
+          {
+            "api": "ReadFile",
+            "category": "file",
+            "arguments": {
+              "hFile": "0x100"
+            },
+            "time": 0.24000000000000002,
+            "return": "1"
+          },
+          {
+            "api": "WriteFile",
+            "category": "file",
+            "arguments": {
+              "hFile": "0x100",
+              "Buffer": "ENCRYPTED_DATA..."
+            },
+            "time": 0.25,
+            "return": "1"
+          },
+          {
+            "api": "CloseHandle",
+            "category": "handle",
+            "arguments": {
+              "hObject": "0x100"
+            },
+            "time": 0.26,
+            "return": "1"
+          },
+          {
+            "api": "RegOpenKeyExW",
+            "category": "registry",
+            "arguments": {
+              "hKey": "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"
+            },
+            "time": 0.28,
+            "return": "0"
+          },
+          {
+            "api": "RegSetValueExW",
+            "category": "registry",
+            "arguments": {
+              "lpValueName": "MalwareUpdater",
+              "lpData": "C:\\Users\\Admin\\malware.exe"
+            },
+            "time": 0.29000000000000004,
+            "return": "0"
+          },
+          {
+            "api": "CreateProcessW",
+            "category": "process",
+            "arguments": {
+              "lpApplicationName": "cmd.exe",
+              "lpCommandLine": "/c vssadmin delete shadows /all"
+            },
+            "time": 0.29000000000000004,
+            "return": "1"
+          }
+        ]
+      },
+      {
+        "process_id": 1001,
+        "parent_id": 1000,
+        "process_name": "cmd.exe",
+        "command_line": "cmd.exe /c vssadmin delete shadows /all",
+        "calls": [
+          {
+            "api": "NtTerminateProcess",
+            "category": "process",
+            "arguments": {},
+            "time": 1.29,
+            "return": "0"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,279 +1,91 @@
-# IDA JSON Exporter Suite
+# HoloGuard
 
-A comprehensive toolkit for exporting IDA Pro database content to structured JSON format, suitable for malware analysis, visualization tools, and data archival.
+**Malware Detection Pipeline using Heterogeneous Graph Neural Networks**
+
+## Overview
+
+HoloGuard is a research-grade malware detection system that processes dynamic analysis logs (Cuckoo Sandbox) and uses Graph Neural Networks for classification.
 
 ## Quick Start
 
-### Running in IDA Pro
+```bash
+# Manual Mode (Batch JSON Export)
+python main.py manual --input samples.txt --output ./exports
 
-1. Open your IDB in IDA Pro 7.x+
-2. **File → Script file...** → select `export_ida_to_json.py`
-3. Output saved to your home directory as `<idb_name>.ida_export.json`
-
-```python
-# Or paste in IDA Python console:
-exec(open(r"d:\examinate\json\export_ida_to_json.py").read())
+# ML Mode (Full Pipeline)
+python main.py ml --input report.json --model model.pt
 ```
 
-### Output Modes
+## Deployment Modes
 
-| Mode | Function | Use Case |
-|------|----------|----------|
-| **JSON** | `export_json()` | Small/medium IDBs, single file output |
-| **NDJSON** | `export_ndjson()` | Large IDBs (10k+ functions), streaming |
+### 1. Manual Mode (Massive Batch Export)
 
-```python
-# Force NDJSON for large databases:
-from export_ida_to_json import export_ndjson
-export_ndjson("my_large_sample.ndjson")
-```
-
-## Files
-
-| File | Description |
-|------|-------------|
-| `export_ida_to_json.py` | Main IDA exporter script |
-| `validate_export.py` | Schema validator |
-| `package_export.py` | Archive packager with signing |
-| `ida_export_schema.json` | JSON Schema Draft-07 |
-| `sample_export.json` | Example output |
-
-### Dataset Reference
-
-The [`sample_export.json`](sample_export.json) file serves as a **template for your malware dataset**. It demonstrates:
-
-- **2 functions** with realistic x86 disassembly
-- **7 basic blocks** showing CFG structure
-- **26 instructions** with opcodes, operands, and bytes
-- **6 xrefs** (code calls, jumps, data reads/writes)
-- **7 CFG edges** for graph construction
-
-Use this as a reference when building your GNN training pipeline.
-
-## Validation
+Process a list of Cuckoo reports and export structured JSON.  
+**No ML dependencies required.**
 
 ```bash
-python validate_export.py sample_export.json
+# Create input list
+echo "path/to/report1.json" > samples.txt
+echo "path/to/report2.json" >> samples.txt
+
+# Run
+python main.py manual -i samples.txt -o ./exports
 ```
 
-**Expected output:**
-```
-============================================================
-  IDA Export Validation Report
-============================================================
+**Output:** `exports/{name}_parsed.json` for each input.
 
-[Metadata]
-  Exporter: ida-json-exporter v1.0.0
-  IDA Version: 8.3
-  ...
+### 2. ML Mode (Graph Neural Network)
 
-[Statistics]
-  Functions: 2
-  Basic Blocks: 7
-  Instructions: 26
-  ...
-
-============================================================
-  ✓ Schema validation PASSED
-============================================================
-```
-
-## Packaging
-
-Create a tamper-evident archive:
+Full pipeline: Parse → Graph → Prune → H-GraphSAGE → Prediction.  
+**Requires:** `torch`, `torch_geometric`, `networkx`
 
 ```bash
-# Basic package
-python package_export.py sample_export.json
+pip install torch torch_geometric networkx
 
-# With Ed25519 signature (requires: pip install pynacl)
-python package_export.py sample_export.json --sign --keyfile mykey.json
+python main.py ml -i report.json -m trained.pt -o result.json
 ```
 
-**Archive structure:**
-```
-sample_export-20260119.ida_export.tar.gz
-├── manifest.json      # File hashes, metadata
-├── provenance.json    # Extraction environment info
-├── data/
-│   └── sample_export.json
-└── signature.sig      # Ed25519 signature (optional)
-```
-
-## JSON Schema Overview
+## Project Structure
 
 ```
-{
-  "meta": { ... },           // Export metadata & provenance
-  "functions": [             // Array of function objects
-    {
-      "name": "sub_401000",
-      "start": "0x401000",
-      "end": "0x4010F0",
-      "size": 240,
-      "blocks": [ ... ],     // Basic blocks with instructions
-      "calls_out": [...],    // Functions called
-      "called_by": [...]     // Callers
-    }
-  ],
-  "xrefs": [ ... ],          // Global cross-reference list
-  "cfg_edges": [ ... ]       // Flattened CFG for visualization
-}
+├── main.py                 # Entry point (Manual/ML modes)
+├── cuckoo_parser.py        # Parse Cuckoo JSON reports
+├── build_hetero_graph.py   # Construct HeteroData
+├── graph_pruning.py        # Node-Centric Pruning (NCP)
+├── models/
+│   └── h_graphsage.py      # Heterogeneous GraphSAGE
+├── generate_synthetic_cuckoo.py  # Test data generator
+└── sample_export.json      # Example output
 ```
 
-## Configuration
+## Graph Schema
 
-Edit `ExporterConfig` class in `export_ida_to_json.py`:
+| Node Type | Description |
+|-----------|-------------|
+| Process   | Running processes (PID, Name) |
+| API       | System API calls |
+| File      | File system interactions |
+| Network   | Network connections (IP, Domain) |
+| Registry  | Registry modifications |
 
-```python
-class ExporterConfig:
-    INCLUDE_BYTES = True          # Instruction bytes
-    INCLUDE_COMMENTS = True       # IDA comments
-    INCLUDE_GLOBAL_XREFS = True   # Global xref list
-    INCLUDE_CFG_EDGES = True      # CFG edge list
-    MAX_FUNCTIONS_BEFORE_NDJSON = 10000  # Auto-switch threshold
-```
+| Edge Type | Relationship |
+|-----------|--------------|
+| spawn     | Process → Process |
+| call      | Process → API |
+| access    | API → File |
+| connect   | API → Network |
+| modify    | API → Registry |
+| next      | API → API (sequence) |
 
-## IDA Version Compatibility
+## Requirements
 
-Tested on IDA 7.x and 8.x. The script includes a compatibility layer (`IDACompat`) that handles API variations between versions:
+**Manual Mode:** Python 3.8+
 
-- Automatic API detection
-- Fallbacks for renamed functions
-- Safe operation on unknown versions
-
-## Integration Examples
-
-### Load in Python
-```python
-import json
-with open("export.json") as f:
-    data = json.load(f)
-    
-for func in data["functions"]:
-    print(f"{func['name']}: {len(func['blocks'])} blocks")
-```
-
-### Stream NDJSON
-```python
-import json
-with open("export.ndjson") as f:
-    for line in f:
-        obj = json.loads(line)
-        if "function" in obj:
-            print(obj["function"]["name"])
-```
-
-### Build call graph
-```python
-import networkx as nx
-G = nx.DiGraph()
-
-for func in data["functions"]:
-    for target in func["calls_out"]:
-        G.add_edge(func["start"], target)
-```
-
----
-
-## GNN Pipeline (v1.1)
-
-### Batch Processing 10,000+ Samples
-
+**ML Mode:**
 ```bash
-# Install dependencies
-pip install tqdm
-
-# Run batch processor
-python batch_runner.py \
-    --samples-dir ./malware \
-    --ida-path "C:/Program Files/IDA Pro 8.3/idat64.exe" \
-    --output-dir ./exports \
-    --workers 8
+pip install torch torch_geometric networkx tqdm
 ```
-
-**Features:**
-- Parallel IDA instances (configurable workers)
-- Auto-skip processed samples
-- Progress bar (tqdm)
-- Error logging
-
-### Convert to PyTorch Geometric
-
-```bash
-# Install PyTorch Geometric
-pip install torch torch_geometric
-
-# Single file
-python json_to_pyg.py export.json --output graph.pt --info
-
-# Batch convert
-python json_to_pyg.py ./exports/ --output ./graphs/ --batch
-```
-
-**Node Features (Basic Blocks):**
-- Bag of Opcodes (95 common x86/x64 mnemonics)
-- Statistical features (block size, call count, xrefs)
-
----
-
-## Graph Construction Deep Dive
-
-This pipeline implements a scientifically rigorous **Control Flow Graph (CFG)** extraction for GNNs.
-
-### 1. Data Structure (`sample_export.json`)
-The JSON structure maps directly to GNN components:
-
-```json
-{
-  "blocks": [
-    { "id": "bb0", "insns": [{"mnemonic": "push"}, {"mnemonic": "mov"}] },  // Node 0
-    { "id": "bb1", "insns": [{"mnemonic": "call"}] },                        // Node 1
-    { "id": "bb2", "insns": [{"mnemonic": "xor"}] }                          // Node 2
-  ],
-  "cfg_edges": [
-    { "from_block": "bb0", "to_block": "bb1" },  // Edge 0->1
-    { "from_block": "bb0", "to_block": "bb2" }   // Edge 0->2
-  ]
-}
-```
-
-### 2. Node Features (X)
-We use a **Bag-of-Opcodes** approach (10 dimensions) as specified for high-performance malware detection.
-Each basic block becomes a node feature vector counting opcode occurrences.
-
-**Strict Opcode Mapping (dim=10):**
-0: `mov` (Data)    | 1: `push` (Stack) | 2: `call` (Flow) | 3: `add` (Arith)
-4: `jmp` (Jump) | 5: `test` (Logic) | 6: `lea` (Addr)  | 7: `pop` (Stack)
-8: `ret` (Exit) | 9: `other` (Misc)
-
-**Example from Sample:**
-- **Node 0 (`bb0`)**: `push`, `mov`, `sub`, `mov`, `test`, `jz`
-  - Vector: `[2, 1, 0, 1, 1, 1, 0, 0, 0, 0]`
-  - (2 movs, 1 push, 1 sub->add, 1 test, 1 jz->jump)
-
-### 3. Edge Index (A)
-We map string IDs (`bb0`) to integer indices (`0`) to create the Sparse Edge Tensor (COO format).
-
-**Structure:**
-- `from_block` -> Source Node Index
-- `to_block`   -> Target Node Index
-
-**Resulting Tensor:**
-```python
-edge_index = tensor([
-    [0, 0, 1, 2],  # Source Nodes
-    [1, 2, 3, 3]   # Target Nodes
-])
-```
-
-### 4. Labels (y)
-Extracted from filename: `hash_1.json` -> `y = [1]` (Malware).
-
----
-
 
 ## License
 
 MIT
-
